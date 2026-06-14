@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Semantic Search - Local AI</title>
+  <meta name="author" content="Founder Bilal - nexagaze">
+  <meta name="keywords" content="semantic search, AI product search, intent-based matching, Ollama search, nexagaze, bilal, AI, open source, behavior tracking">
+  <link rel="icon" href="data:,">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: #0f172a; min-height: 100vh; padding: 2rem; }
+    .container { max-width: 780px; margin: 0 auto; }
+    h2 { color: #38bdf8; }
+    .subtitle { color: #64748b; font-size: 0.85rem; margin-bottom: 0.25rem; }
+    .search-row { display: flex; gap: 0.5rem; margin: 1rem 0; }
+    .search-row input { flex: 1; padding: 0.75rem 1rem; border: 1px solid #334155; border-radius: 8px; background: #0f172a; color: #e2e8f0; font-size: 1rem; outline: none; }
+    .search-row input:focus { border-color: #38bdf8; }
+    .search-row button { padding: 0.75rem 1.5rem; background: #38bdf8; color: #0f172a; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .search-row button:hover { background: #0ea5e9; }
+    .search-row button:disabled { opacity: 0.5; }
+    .examples { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .examples button { padding: 0.35rem 0.75rem; background: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 6px; font-size: 0.8rem; cursor: pointer; }
+    .examples button:hover { border-color: #38bdf8; color: #38bdf8; }
+    .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; margin-left: 0.5rem; }
+    .badge.exact { background: #14532d; color: #4ade80; }
+    .badge.semantic { background: #451a03; color: #fb923c; }
+    .badge.fallback { background: #450a0a; color: #f87171; }
+    .products { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; margin-top: 1rem; }
+    .card { background: #1e293b; border-radius: 10px; padding: 1rem; border: 1px solid #334155; }
+    .card h4 { color: #e2e8f0; font-size: 0.95rem; }
+    .card .price { color: #22c55e; font-weight: 600; font-size: 1.1rem; margin: 0.25rem 0; }
+    .card .cat { color: #64748b; font-size: 0.75rem; }
+    .card .tags { margin-top: 0.4rem; display: flex; gap: 0.3rem; flex-wrap: wrap; }
+    .card .tags span { background: #0f172a; color: #94a3b8; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.7rem; }
+    .match-info { color: #64748b; font-size: 0.8rem; text-align: center; margin-top: 1rem; }
+    .no-results { color: #64748b; text-align: center; margin-top: 3rem; }
+    .catalog-toggle { background: none; border: none; color: #38bdf8; cursor: pointer; font-size: 0.8rem; margin-top: 1rem; }
+    .catalog-toggle:hover { text-decoration: underline; }
+    #catalog { margin-top: 0.75rem; display: none; }
+    #catalog.show { display: block; }
+    .status { text-align: center; color: #64748b; font-size: 0.75rem; margin-top: 1.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Semantic Search</h2>
+    <p class="subtitle">Ollama-powered — understands intent, not just keywords</p>
+
+    <div class="search-row">
+      <input id="searchInput" type="text" placeholder='e.g. "heavy clothes for snow", "something to drink coffee from"...' />
+      <button id="searchBtn">Search</button>
+    </div>
+
+    <div class="examples">
+      <button data-q="heavy clothes for snow">heavy clothes for snow</button>
+      <button data-q="something to drink coffee from">coffee drink</button>
+      <button data-q="protect from rain">protect from rain</button>
+      <button data-q="beach vacation stuff">beach vacation</button>
+      <button data-q="office work essentials">office essentials</button>
+      <button data-q="summer outdoor hiking">summer hiking</button>
+    </div>
+
+    <div id="matchInfo" class="match-info">Search for a product — AI matches meaning, not exact words.</div>
+
+    <div id="results" class="products"></div>
+
+    <button class="catalog-toggle" id="catalogToggle">Show full catalog (20 items)</button>
+    <div id="catalog"></div>
+
+    <div class="status">Local Ollama &bull; minimax-m2.1:cloud &bull; No external APIs</div>
+  </div>
+
+  <script>
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const resultsEl = document.getElementById('results');
+    const matchInfo = document.getElementById('matchInfo');
+    const catalogEl = document.getElementById('catalog');
+    const catalogToggle = document.getElementById('catalogToggle');
+
+    const PRODUCTS = [
+      { id: 1, name: 'Winter Jacket', category: 'Clothing', price: 89, tags: ['heavy', 'warm', 'snow', 'cold', 'outerwear'] },
+      { id: 2, name: 'Running Shoes', category: 'Shoes', price: 120, tags: ['light', 'sports', 'jogging', 'gym', 'comfort'] },
+      { id: 3, name: 'Sunglasses', category: 'Accessories', price: 25, tags: ['sun', 'summer', 'uv', 'beach', 'style'] },
+      { id: 4, name: 'Umbrella', category: 'Accessories', price: 15, tags: ['rain', 'water', 'storm', 'wet'] },
+      { id: 5, name: 'Leather Boots', category: 'Shoes', price: 180, tags: ['tough', 'heavy', 'winter', 'durable', 'outdoor'] },
+      { id: 6, name: 'Cotton T-Shirt', category: 'Clothing', price: 29, tags: ['light', 'summer', 'casual', 'breathable'] },
+      { id: 7, name: 'Wool Scarf', category: 'Accessories', price: 35, tags: ['warm', 'winter', 'soft', 'neck'] },
+      { id: 8, name: 'Backpack', category: 'Bags', price: 65, tags: ['travel', 'school', 'outdoor', 'storage'] },
+      { id: 9, name: 'Swim Trunks', category: 'Clothing', price: 22, tags: ['beach', 'summer', 'swim', 'light'] },
+      { id: 10, name: 'Hiking Sandals', category: 'Shoes', price: 55, tags: ['outdoor', 'summer', 'trail', 'light'] },
+      { id: 11, name: 'Down Vest', category: 'Clothing', price: 75, tags: ['warm', 'light', 'winter', 'layer'] },
+      { id: 12, name: 'Yoga Mat', category: 'Fitness', price: 30, tags: ['exercise', 'gym', 'flexible', 'workout'] },
+      { id: 13, name: 'Raincoat', category: 'Clothing', price: 60, tags: ['rain', 'waterproof', 'wet', 'storm'] },
+      { id: 14, name: 'Cycling Helmet', category: 'Sports', price: 45, tags: ['bike', 'safety', 'outdoor', 'protection'] },
+      { id: 15, name: 'Fleece Blanket', category: 'Home', price: 40, tags: ['warm', 'soft', 'cozy', 'winter', 'bed'] },
+      { id: 16, name: 'Espresso Maker', category: 'Kitchen', price: 150, tags: ['coffee', 'morning', 'hot', 'brew'] },
+      { id: 17, name: 'Desk Lamp', category: 'Office', price: 35, tags: ['work', 'light', 'study', 'led'] },
+      { id: 18, name: 'Water Bottle', category: 'Sports', price: 18, tags: ['hydration', 'gym', 'outdoor', 'reusable'] },
+      { id: 19, name: 'Ski Gloves', category: 'Clothing', price: 45, tags: ['winter', 'snow', 'cold', 'ski', 'heavy'] },
+      { id: 20, name: 'Cooler Bag', category: 'Bags', price: 28, tags: ['picnic', 'summer', 'beach', 'travel', 'cold'] },
+    ];
+
+    function renderCards(products, matchType) {
+      if (!products || products.length === 0) {
+        resultsEl.innerHTML = '<div class="no-results">No matching products found.</div>';
+        matchInfo.textContent = 'No results — try a different search';
+        return;
+      }
+      resultsEl.innerHTML = products.map(p => `
+        <div class="card">
+          <h4>${p.name}</h4>
+          <div class="price">$${p.price}</div>
+          <div class="cat">${p.category}</div>
+          <div class="tags">${p.tags.map(t => `<span>${t}</span>`).join('')}</div>
+        </div>
+      `).join('');
+      const badge = matchType === 'exact' ? '<span class="badge exact">Keyword match</span>'
+        : matchType === 'semantic' ? '<span class="badge semantic">AI semantic match</span>'
+        : '<span class="badge fallback">Fallback</span>';
+      matchInfo.innerHTML = `Found ${products.length} product${products.length > 1 ? 's' : ''} ${badge}`;
+    }
+
+    async function search() {
+      const query = searchInput.value.trim();
+      if (!query) return;
+      searchBtn.disabled = true;
+      searchBtn.textContent = 'Searching...';
+      matchInfo.textContent = 'Thinking with Ollama...';
+      try {
+        const res = await fetch('/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query })
+        });
+        const data = await res.json();
+        renderCards(data.results, data.match);
+      } catch (err) {
+        matchInfo.textContent = 'Error: ' + err.message;
+      }
+      searchBtn.disabled = false;
+      searchBtn.textContent = 'Search';
+    }
+
+    searchBtn.addEventListener('click', search);
+    searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') search(); });
+
+    document.querySelectorAll('.examples button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        searchInput.value = btn.dataset.q;
+        search();
+      });
+    });
+
+    catalogToggle.addEventListener('click', () => {
+      const show = catalogEl.classList.toggle('show');
+      catalogToggle.textContent = show ? 'Hide catalog' : 'Show full catalog (20 items)';
+      if (show) {
+        catalogEl.innerHTML = '<div class="products">' + PRODUCTS.map(p => `
+          <div class="card" style="opacity:0.7">
+            <h4>${p.name}</h4>
+            <div class="price">$${p.price}</div>
+            <div class="cat">${p.category}</div>
+            <div class="tags">${p.tags.map(t => `<span>${t}</span>`).join('')}</div>
+          </div>
+        `).join('') + '</div>';
+      }
+    });
+  </script>
+
+  <div style="text-align:center;padding:1rem;color:#475569;font-size:0.75rem;border-top:1px solid #1e293b;">
+    nexagaze project &mdash; built by Founder Bilal &bull;
+    <a href="mailto:ai@nexagaze.com" style="color:#64748b;">ai@nexagaze.com</a> &bull;
+    <a href="https://wa.me/9203103860653" style="color:#64748b;">03103860653</a>
+  </div>
+</body>
+</html>
