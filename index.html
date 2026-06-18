@@ -3,56 +3,135 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Semantic Search - Local AI</title>
+  <title>Semantic Search — Nexagaze</title>
   <meta name="author" content="Founder Bilal - nexagaze">
   <meta name="keywords" content="semantic search, AI product search, intent-based matching, Ollama search, nexagaze, bilal, AI, open source, behavior tracking">
   <link rel="icon" href="data:,">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
-    body { background: #0f172a; min-height: 100vh; padding: 2rem; }
-    .container { max-width: 780px; margin: 0 auto; }
-    h2 { color: #38bdf8; }
-    .subtitle { color: #64748b; font-size: 0.85rem; margin-bottom: 0.25rem; }
+    body { background: #ffffff; color: #1a1a1a; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid #e5e7eb; padding: 0.85rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+    nav .logo { font-size: 1.2rem; font-weight: 700; color: #16a34a; text-decoration: none; }
+    nav .logo span { color: #1a1a1a; }
+    nav .links { display: flex; gap: 1.5rem; align-items: center; }
+    nav .links a { text-decoration: none; color: #6b7280; font-size: 0.85rem; font-weight: 500; transition: color 0.2s; }
+    nav .links a:hover, nav .links a.active { color: #16a34a; }
+    .container { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem; }
+    h2 { color: #16a34a; }
+    .subtitle { color: #6b7280; font-size: 0.85rem; margin-bottom: 0.25rem; }
     .search-row { display: flex; gap: 0.5rem; margin: 1rem 0; }
-    .search-row input { flex: 1; padding: 0.75rem 1rem; border: 1px solid #334155; border-radius: 8px; background: #0f172a; color: #e2e8f0; font-size: 1rem; outline: none; }
-    .search-row input:focus { border-color: #38bdf8; }
-    .search-row button { padding: 0.75rem 1.5rem; background: #38bdf8; color: #0f172a; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
-    .search-row button:hover { background: #0ea5e9; }
+    .search-row input { flex: 1; padding: 0.75rem 1rem; border: 1px solid #e5e7eb; border-radius: 8px; background: #ffffff; color: #1a1a1a; font-size: 1rem; outline: none; }
+    .search-row input:focus { border-color: #22c55e; }
+    .search-row button { padding: 0.75rem 1.5rem; background: #22c55e; color: #ffffff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .search-row button:hover { background: #16a34a; }
     .search-row button:disabled { opacity: 0.5; }
     .examples { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
-    .examples button { padding: 0.35rem 0.75rem; background: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 6px; font-size: 0.8rem; cursor: pointer; }
-    .examples button:hover { border-color: #38bdf8; color: #38bdf8; }
+    .examples button { padding: 0.35rem 0.75rem; background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
+    .examples button:hover { border-color: #22c55e; color: #16a34a; background: #f0fdf4; }
     .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; margin-left: 0.5rem; }
-    .badge.exact { background: #14532d; color: #4ade80; }
-    .badge.semantic { background: #451a03; color: #fb923c; }
-    .badge.fallback { background: #450a0a; color: #f87171; }
+    .badge.exact { background: #dcfce7; color: #16a34a; }
+    .badge.semantic { background: #fef3c7; color: #d97706; }
+    .badge.fallback { background: #fecaca; color: #dc2626; }
     .products { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; margin-top: 1rem; }
-    .card { background: #1e293b; border-radius: 10px; padding: 1rem; border: 1px solid #334155; }
-    .card h4 { color: #e2e8f0; font-size: 0.95rem; }
+    .card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 1rem; }
+    .card h4 { color: #1a1a1a; font-size: 0.95rem; }
     .card .price { color: #22c55e; font-weight: 600; font-size: 1.1rem; margin: 0.25rem 0; }
-    .card .cat { color: #64748b; font-size: 0.75rem; }
+    .card .cat { color: #6b7280; font-size: 0.75rem; }
     .card .tags { margin-top: 0.4rem; display: flex; gap: 0.3rem; flex-wrap: wrap; }
-    .card .tags span { background: #0f172a; color: #94a3b8; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.7rem; }
-    .match-info { color: #64748b; font-size: 0.8rem; text-align: center; margin-top: 1rem; }
-    .no-results { color: #64748b; text-align: center; margin-top: 3rem; }
-    .catalog-toggle { background: none; border: none; color: #38bdf8; cursor: pointer; font-size: 0.8rem; margin-top: 1rem; }
+    .card .tags span { background: #ffffff; color: #6b7280; border: 1px solid #e5e7eb; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.7rem; }
+    .match-info { color: #6b7280; font-size: 0.8rem; text-align: center; margin-top: 1rem; }
+    .no-results { color: #9ca3af; text-align: center; margin-top: 3rem; }
+    .catalog-toggle { background: none; border: none; color: #16a34a; cursor: pointer; font-size: 0.8rem; margin-top: 1rem; font-weight: 500; }
     .catalog-toggle:hover { text-decoration: underline; }
     #catalog { margin-top: 0.75rem; display: none; }
     #catalog.show { display: block; }
-    .status { text-align: center; color: #64748b; font-size: 0.75rem; margin-top: 1.5rem; }
+    .status { text-align: center; color: #6b7280; font-size: 0.75rem; margin-top: 1.5rem; }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+    @keyframes float2 { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-20px) rotate(5deg); } }
+    .fade-in { opacity: 0; transform: translateY(30px); transition: all 0.6s ease-out; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+    .hero { min-height: 85vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2rem; position: relative; overflow: hidden; }
+    .hero h1 { font-size: 3rem; line-height: 1.1; margin-bottom: 1rem; animation: fadeInUp 0.8s ease-out; color: #16a34a; }
+    .hero p { font-size: 1.1rem; color: #6b7280; max-width: 560px; margin-bottom: 2rem; animation: fadeInUp 0.8s ease-out 0.2s both; }
+    .hero .btns { display: flex; gap: 1rem; animation: fadeInUp 0.8s ease-out 0.4s both; }
+    .hero .btns .btn-primary { padding: 0.85rem 2rem; background: #22c55e; color: #fff; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: background 0.2s; }
+    .hero .btns .btn-primary:hover { background: #16a34a; }
+    .hero .btns .btn-outline { padding: 0.85rem 2rem; background: transparent; color: #16a34a; border: 2px solid #16a34a; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: all 0.2s; }
+    .hero .btns .btn-outline:hover { background: #f0fdf4; }
+    .hero .float-el { position: absolute; border-radius: 50%; opacity: 0.08; pointer-events: none; }
+    .hero .float-el:nth-child(1) { width: 90px; height: 90px; background: #22c55e; top: 15%; left: 10%; animation: float 6s ease-in-out infinite; }
+    .hero .float-el:nth-child(2) { width: 65px; height: 65px; background: #16a34a; top: 60%; right: 14%; animation: float 8s ease-in-out infinite 1s; }
+    .hero .float-el:nth-child(3) { width: 45px; height: 45px; background: #22c55e; bottom: 18%; left: 22%; animation: float2 7s ease-in-out infinite 0.5s; border-radius: 8px; }
+    .hero .float-el:nth-child(4) { width: 80px; height: 80px; background: #16a34a; top: 22%; right: 28%; animation: float 9s ease-in-out infinite 2s; }
+    .hero .float-el:nth-child(5) { width: 30px; height: 30px; background: #22c55e; bottom: 38%; right: 32%; animation: float2 5s ease-in-out infinite 1.5s; border-radius: 8px; }
+    footer { text-align: center; padding: 1.5rem; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 0.8rem; }
+    footer a { color: #16a34a; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+    .nav { animation: navslide 0.6s ease-out 0.2s both; }
+    @keyframes navslide { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body>
-  <div class="container">
+<style>
+#nexasplash {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: #ffffff; z-index: 99999;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column;
+  animation: nexafade 0.6s ease-out 1.5s forwards;
+}
+#nexasplash .nx-logo {
+  font-size: 48px; font-weight: 900; color: #ea580c;
+  letter-spacing: 3px; font-family: system-ui, -apple-system, sans-serif;
+  animation: nxpop 0.5s ease-out;
+}
+#nexasplash .nx-sub {
+  font-size: 13px; color: #9ca3af; margin-top: 8px;
+  letter-spacing: 5px; text-transform: uppercase;
+}
+@keyframes nexafade { to { opacity: 0; pointer-events: none; } }
+@keyframes nxpop { 0% { opacity: 0; transform: scale(0.5); } 70% { transform: scale(1.1); } 100% { opacity: 1; transform: scale(1); } }
+</style>
+<div id="nexasplash">
+  <div class="nx-logo">NEXAGAZE</div>
+  <div class="nx-sub">AI-Powered Solutions</div>
+</div>
+  <nav>
+    <a href="/" class="logo">Nexagaze<span>.</span></a>
+    <div class="links">
+      <a href="/Admin-cata-Agent">Catalog Agent</a>
+      <a href="/auto-blog-writer">Blog Writer</a>
+      <a href="/nextjs-auditor">Code Auditor</a>
+      <a href="/semantic-search" class="active">Semantic Search</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="float-el"></div>
+    <div class="float-el"></div>
+    <div class="float-el"></div>
+    <div class="float-el"></div>
+    <div class="float-el"></div>
+    <h1>Semantic Search</h1>
+    <p>Ollama-powered — understands intent, not just keywords. Search products by meaning.</p>
+    <div class="btns">
+      <a href="#tool" class="btn-primary">Try Search</a>
+      <a href="#catalog" class="btn-outline">Browse Catalog</a>
+    </div>
+  </section>
+
+  <div class="container fade-in" id="tool">
     <h2>Semantic Search</h2>
     <p class="subtitle">Ollama-powered — understands intent, not just keywords</p>
 
-    <div class="search-row">
+    <div class="search-row fade-in">
       <input id="searchInput" type="text" placeholder='e.g. "heavy clothes for snow", "something to drink coffee from"...' />
       <button id="searchBtn">Search</button>
     </div>
 
-    <div class="examples">
+    <div class="examples fade-in">
       <button data-q="heavy clothes for snow">heavy clothes for snow</button>
       <button data-q="something to drink coffee from">coffee drink</button>
       <button data-q="protect from rain">protect from rain</button>
@@ -61,15 +140,21 @@
       <button data-q="summer outdoor hiking">summer hiking</button>
     </div>
 
-    <div id="matchInfo" class="match-info">Search for a product — AI matches meaning, not exact words.</div>
+    <div id="matchInfo" class="match-info fade-in">Search for a product — AI matches meaning, not exact words.</div>
 
-    <div id="results" class="products"></div>
+    <div id="results" class="products fade-in"></div>
 
-    <button class="catalog-toggle" id="catalogToggle">Show full catalog (20 items)</button>
-    <div id="catalog"></div>
+    <button class="catalog-toggle fade-in" id="catalogToggle">Show full catalog (20 items)</button>
+    <div id="catalog" class="fade-in"></div>
 
     <div class="status">Local Ollama &bull; minimax-m2.1:cloud &bull; No external APIs</div>
   </div>
+
+  <footer>
+    Nexagaze &mdash; Built by <a href="https://wa.me/9203103860653" target="_blank">Nexagaze Founder Bilal</a> &bull;
+    <a href="mailto:ai@nexagaze.com">ai@nexagaze.com</a> &bull;
+    <a href="https://wa.me/9203103860653" target="_blank">03103860653</a>
+  </footer>
 
   <script>
     const searchInput = document.getElementById('searchInput');
@@ -167,12 +252,11 @@
         `).join('') + '</div>';
       }
     });
-  </script>
 
-  <div style="text-align:center;padding:1rem;color:#475569;font-size:0.75rem;border-top:1px solid #1e293b;">
-    nexagaze project &mdash; built by Founder Bilal &bull;
-    <a href="mailto:ai@nexagaze.com" style="color:#64748b;">ai@nexagaze.com</a> &bull;
-    <a href="https://wa.me/9203103860653" style="color:#64748b;">03103860653</a>
-  </div>
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+  </script>
 </body>
 </html>
